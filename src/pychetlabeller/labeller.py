@@ -11,7 +11,8 @@ import argparse
 import numpy as np
 import svgwrite
 
-from PyQt4 import QtGui, QtCore
+from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5.QtCore import (Qt, pyqtSignal, pyqtSlot)
 from shapely.geometry import Point, box # Polygon
 from .labeller_ui import Ui_MainWindow
 
@@ -85,7 +86,7 @@ class LabelDataset(object):
             except ValueError:
                 # Things that don't convert will be skipped
                 if line[0][0] != '#': # ignore comments
-                    print "WARNING: Skipped a line (ValueError) '%s'" % line
+                    print("WARNING: Skipped a line (ValueError) '{}'".format(line))
         label_file.close()
     def find(self, labelshape_id):
         '''find a LabelShape given by ID'''
@@ -135,7 +136,7 @@ class Tool_Circle(Tool):
         self.label = 1
         self.radius_scroll_delta = 2
     def click(self, parent, button, release=False):
-        modifiers = QtGui.QApplication.keyboardModifiers()
+        modifiers = QtWidgets.QApplication.keyboardModifiers()
         point = (self.position.x(), self.position.y())
         if release:
             return
@@ -168,7 +169,7 @@ class Tool_Circle(Tool):
             parent.imagePanel.update()
             parent.ui.treeWidget.update()
         else:
-            keystr = str(QtCore.QString(QtCore.QChar(key))).lower()
+            keystr = str(key).lower()
             shortcuts = [x['keyboard_shortcut'] for x in self.labelmap]
             if keystr and keystr in shortcuts:
                 _label = shortcuts.index(keystr)
@@ -194,7 +195,7 @@ class Tool_Rectangle(Tool):
     def click(self, parent, button, release=False):
         if release:
             return
-        modifiers = QtGui.QApplication.keyboardModifiers()
+        modifiers = QtWidgets.QApplication.keyboardModifiers()
         point = (self.position.x(), self.position.y())
         if modifiers == QtCore.Qt.ShiftModifier and button == QtCore.Qt.LeftButton:
             datum = sorted(label_dataset.data_at(point))
@@ -207,7 +208,7 @@ class Tool_Rectangle(Tool):
                 label_name=self.labelmap[ [x['object_id'] for x in self.labelmap].index(self.label) ]['object_name']))
     def wheel(self, parent, QWheelEvent):
         delta = QWheelEvent.delta()
-        modifiers = QtGui.QApplication.keyboardModifiers()
+        modifiers = QtWidgets.QApplication.keyboardModifiers()
         if modifiers == QtCore.Qt.ShiftModifier: # 1-pixel delta mode
             if self.resize_dim & Tool_Rectangle.RESIZE_X:
                 self.dx = max(1, self.dx + np.sign(delta) * self.size_scroll_delta_precise)
@@ -243,7 +244,7 @@ class Tool_Rectangle(Tool):
         elif key == QtCore.Qt.Key_A:
             self.resize_dim = Tool_Rectangle.RESIZE_Y
         else:
-            keystr = str(QtCore.QString(QtCore.QChar(key))).lower()
+            keystr = str(key).lower()
             shortcuts = [x['keyboard_shortcut'] for x in self.labelmap]
             if keystr and keystr in shortcuts:
                 _label = shortcuts.index(keystr)
@@ -267,11 +268,11 @@ class Tool_TransformView(Tool):
         if release:
             parent.setCursor(QtGui.QCursor(QtCore.Qt.OpenHandCursor))
             # parent.setDragMode(QtGui.QGraphicsView.ScrollHandDrag)
-            parent.setFlag(QtGui.QGraphicsItem.ItemIsMovable, False)
+            parent.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, False)
         else:
             parent.setCursor(QtGui.QCursor(QtCore.Qt.ClosedHandCursor))
             # parent.setDragMode(QtGui.QGraphicsView.NoDrag)
-            parent.setFlag(QtGui.QGraphicsItem.ItemIsMovable, True)
+            parent.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
     def wheel(self, parent, QWheelEvent):
         delta = np.sign(QWheelEvent.delta()) * 0.1 
         parent.zoom(delta)
@@ -321,7 +322,7 @@ class LabelRectangle(LabelShape):
         return x,y,dx,dy
     def populate_view(self, view, **kwargs):
         x, y, dx, dy = self.get_rect_data()
-        if isinstance(view, QtGui.QTreeWidgetItem):
+        if isinstance(view, QtWidgets.QTreeWidgetItem):
             # NOTE: It is important not to change the first field as it is used for lookup
             view.setText(0, str(self.id)) 
             view.setText(1, "(%d, %d)" % (x, y))
@@ -348,7 +349,7 @@ class LabelCircle(LabelShape):
         (circle.x, circle.y, circle.radius) = (x, y, radius)
         super(LabelCircle, self).__init__(label, circle, label_name=label_name)
     def populate_view(self, view, **kwargs):
-        if isinstance(view, QtGui.QTreeWidgetItem):
+        if isinstance(view, QtWidgets.QTreeWidgetItem):
             # NOTE: It is important not to change the first field as it is used for lookup
             view.setText(0, str(self.id)) 
             view.setText(1, "(%d, %d)" % (self.shape.x, self.shape.y))
@@ -368,17 +369,17 @@ class LabelCircle(LabelShape):
             , r=self.shape.radius, stroke=svgwrite.rgb(r, g, b, 'RGB')
             , fill=svgwrite.rgb(r, g, b, 'RGB'))
 
-class SelectDropType(QtGui.QDialog):
+class SelectDropType(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super(SelectDropType, self).__init__(parent)
-        msgBox = QtGui.QMessageBox()
+        msgBox = QtWidgets.QMessageBox()
         msgBox.setText('Which folder is this?')
-        msgBox.addButton(QtGui.QPushButton('Cancel'), QtGui.QMessageBox.RejectRole)
-        msgBox.addButton(QtGui.QPushButton('Labels'), QtGui.QMessageBox.NoRole)
-        msgBox.addButton(QtGui.QPushButton('Images'), QtGui.QMessageBox.YesRole)
+        msgBox.addButton(QtWidgets.QPushButton('Cancel'), QtWidgets.QMessageBox.RejectRole)
+        msgBox.addButton(QtWidgets.QPushButton('Labels'), QtWidgets.QMessageBox.NoRole)
+        msgBox.addButton(QtWidgets.QPushButton('Images'), QtWidgets.QMessageBox.YesRole)
         self.selection = msgBox.exec_()
 
-class ObjectDrawPanel(QtGui.QGraphicsPixmapItem):
+class ObjectDrawPanel(QtWidgets.QGraphicsPixmapItem):
     """Establish a pixmap item on which labelling (painting) will be performed"""
     def __init__(self, pixmap=None, parent=None, scene=None, tool='circle', labelmap=None, penwidth=1):
         self.is_initialised = False
@@ -412,7 +413,7 @@ class ObjectDrawPanel(QtGui.QGraphicsPixmapItem):
         self.setBrushes()
         # Set up options
         self.setAcceptHoverEvents(True)
-        self.setFlag(QtGui.QGraphicsItem.ItemIsMovable, False)
+        self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, False)
         self.tool.enable(self)
         self.is_initialised = True
     def change_tool(self, tool=None):
@@ -470,10 +471,10 @@ class ObjectDrawPanel(QtGui.QGraphicsPixmapItem):
     def mouseReleaseEvent(self, event): # QGraphicsSceneMouseEvent
         self.tool.click(self, event.button(), release=True)
         #NOTE: The following line has to be here to propagate the event
-        QtGui.QGraphicsPixmapItem.mouseReleaseEvent(self, event)
+        QtWidgets.QGraphicsPixmapItem.mouseReleaseEvent(self, event)
     def add_datum(self, label_shape):
         label_dataset.add(label_shape)
-        item = QtGui.QTreeWidgetItem(self.parent.ui.treeWidget)
+        item = QtWidgets.QTreeWidgetItem(self.parent.ui.treeWidget)
         label_shape.populate_view(item)
         self.changeMade = True
     def remove_datum(self, label_shape, from_tree=False):
@@ -492,11 +493,11 @@ class ObjectDrawPanel(QtGui.QGraphicsPixmapItem):
         self.update()
         self.parent.ui.treeWidget.setFocus()
 
-class MainWindow(QtGui.QMainWindow):
+class MainWindow(QtWidgets.QMainWindow):
     """The main window of the GUI - designed using Qt Designer"""
     def __init__(self):
         self.scroll_zoom_delta = 0.1
-        QtGui.QMainWindow.__init__(self)
+        QtWidgets.QMainWindow.__init__(self)
         # Set up the under interface - as designed in Qt Designer
         self.penwidth = 1
         self.ui = Ui_MainWindow()
@@ -524,7 +525,7 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.treeWidget.mousePressEvent = self.treeMousePress
         # Redefine graphics view with new class
         self.ui.graphicsView = FitImageGraphicsView(self.ui.centralwidget)
-        self.ui.graphicsView.setObjectName(QtCore.QString.fromUtf8("graphicsView"))
+        self.ui.graphicsView.setObjectName("graphicsView")
         self.ui.gridLayout_3.addWidget(self.ui.graphicsView, 0, 0, 1, 3)
         # Initialise status
         self.ui.statusBar.showMessage('Welcome to the future of image annotation..!')
@@ -543,26 +544,33 @@ class MainWindow(QtGui.QMainWindow):
         # handlers: [UI Element, Signal, Handler]
         handlers = [ \
         # Folder/image navigation
-         [ui.browse_btn, QtCore.SIGNAL("clicked()"), self.openImageDirectory],
-         [ui.label_folder_btn, QtCore.SIGNAL("clicked()"), self.setLabelDirectory],
-         [ui.prev_btn, QtCore.SIGNAL("clicked()"), self.previousImage],
-         [ui.next_btn, QtCore.SIGNAL("clicked()"), self.nextImage],
-         [ui.imageComboBox, QtCore.SIGNAL("currentIndexChanged(QString)"), self.changeImage],
-         [ui.save_btn, QtCore.SIGNAL("clicked()"), self.saveAnnotations],
+         [ui.browse_btn,       "clicked",             self.openImageDirectory],
+         [ui.label_folder_btn, "clicked",             self.setLabelDirectory],
+         [ui.prev_btn,         "clicked",             self.previousImage],
+         [ui.next_btn,         "clicked",             self.nextImage],
+         #[ui.imageComboBox,    "currentIndexChanged", self.changeImage],
+         [ui.save_btn,         "clicked",             self.saveAnnotations],
          # Menu bar
-         [ui.actionOpen_Folder, QtCore.SIGNAL("triggered()"), self.openImageDirectory],
-         [ui.actionSave_Label, QtCore.SIGNAL("triggered()"), self.saveAnnotations],
-         [ui.actionExit_3, QtCore.SIGNAL("triggered()"), self.close],
-         [ui.actionAbout, QtCore.SIGNAL("triggered()"), self.aboutWindow],
-         [ui.actionLoad_Label, QtCore.SIGNAL("triggered()"), self.loadFromFile],
+         [ui.actionOpen_Folder, "triggered",          self.openImageDirectory],
+         [ui.actionSave_Label,  "triggered",          self.saveAnnotations],
+         [ui.actionExit_3,      "triggered",          self.close],
+         [ui.actionAbout,       "triggered",          self.aboutWindow],
+         [ui.actionLoad_Label,  "triggered",          self.loadFromFile],
          # Annotation tool
-         [ui.opacity_slider, QtCore.SIGNAL('valueChanged(int)'), self.change_opacity],
+         [ui.opacity_slider,    'valueChanged',       self.change_opacity],
          # Imaging properties
-         [ui.brightness_slider, QtCore.SIGNAL('valueChanged(int)'), self.change_brightness],
-         [ui.contrast_slider, QtCore.SIGNAL('valueChanged(int)'), self.change_contrast]
+         [ui.brightness_slider, 'valueChanged',       self.change_brightness],
+         [ui.contrast_slider,   'valueChanged',       self.change_contrast]
+        ]
+        handlers_str = [ \
+        # Folder/image navigation
+         [ui.imageComboBox,    "currentIndexChanged", self.changeImage],
         ]
         for handler in handlers:
-            self.connect(handler[0], handler[1], handler[2])
+            getattr(handler[0], handler[1]).connect(handler[2])
+
+        for handler in handlers_str:
+            getattr(handler[0], handler[1])[str].connect(handler[2])
         ui.actionSave_Label.setShortcut(QtGui.QKeySequence("Ctrl+s"))
         ui.actionExit_3.setStatusTip('Exit Application')
         ui.actionExit_3.setShortcut(QtCore.Qt.Key_Escape)
@@ -625,7 +633,7 @@ class MainWindow(QtGui.QMainWindow):
         # Check if mouse selected gives a valid item
         item = self.ui.treeWidget.indexAt(event.pos())
         if item.isValid():
-            QtGui.QTreeWidget.mousePressEvent(self.ui.treeWidget, event)
+            QtWidgets.QTreeWidget.mousePressEvent(self.ui.treeWidget, event)
             selected_item = self.ui.treeWidget.currentItem()
             datum = label_dataset.find(int(selected_item.text(0)))
             self.imagePanel.highlight(datum)
@@ -685,7 +693,7 @@ class MainWindow(QtGui.QMainWindow):
         self.original_size = pixmap.width(), pixmap.height()
         self.firstImage = False
         # Set scene and add to graphics view
-        self.scene = QtGui.QGraphicsScene()
+        self.scene = QtWidgets.QGraphicsScene()
         self.imagePanel = ObjectDrawPanel(scene=self.scene, parent=self, tool=self.tool_str, labelmap=self.labelmap, penwidth=self.penwidth)
         self.imagePanel.setPixmap(self.pixmap)
         self.imagePanel.defaultColorPixmap = self.pixmap
@@ -699,7 +707,7 @@ class MainWindow(QtGui.QMainWindow):
         """ Update the tree when a new annotation is added """
         self.ui.treeWidget.clear()
         for datum in label_dataset.data:
-            datum.populate_view(QtGui.QTreeWidgetItem(self.ui.treeWidget))
+            datum.populate_view(QtWidgets.QTreeWidgetItem(self.ui.treeWidget))
     def loadImage(self, image_path):
         """ Given an image path, load image onto graphics item """
         global label_dataset
@@ -728,7 +736,7 @@ class MainWindow(QtGui.QMainWindow):
     def previousImage(self):
         """ Navigate to previous image in the folder """
         self.nextImage(delta=-1)
-    def nextImage(self, delta=1):
+    def nextImage(self, checked=False, delta=1):
         """ Navigate to next image in the folder """
         # Save annotations if needed
         self.imagePanel.current_scale = 1.0
@@ -739,6 +747,8 @@ class MainWindow(QtGui.QMainWindow):
         if index < 0:
             index = 0
         self.ui.imageComboBox.setCurrentIndex(index)
+
+    @pyqtSlot(str)
     def changeImage(self, text):
         """ Call load image and set new image as title, combo box entry and image # """
         self.loadImage("%s/%s" % (self.folder_image, text))
@@ -749,7 +759,7 @@ class MainWindow(QtGui.QMainWindow):
         """ Open browser containing the set of images to be labelled """
         opendirectory = self.folder_image or self.default_directory
         self.folder_image = folder_image or \
-            str(QtGui.QFileDialog.getExistingDirectory(self, "Open directory", opendirectory))
+            str(QtWidgets.QFileDialog.getExistingDirectory(self, "Open directory", opendirectory))
         # Grab images and set up combobox
         self.images = sorted([x for x in os.listdir(self.folder_image) \
             if os.path.splitext(x)[-1].lower() \
@@ -764,7 +774,7 @@ class MainWindow(QtGui.QMainWindow):
             self.labelFolder = dir_path
         else:
             opendirectory = self.folder_image or '.'
-            labelfolderchoice = str(QtGui.QFileDialog.getExistingDirectory(self, "Open directory", opendirectory))
+            labelfolderchoice = str(QtWidgets.QFileDialog.getExistingDirectory(self, "Open directory", opendirectory))
             if labelfolderchoice:
                 self.labelFolder = labelfolderchoice
     def saveAnnotations(self):
@@ -783,9 +793,9 @@ class MainWindow(QtGui.QMainWindow):
         # If save file already exists, Ask user if they want to overwrite
         if any(map(os.path.exists, save_files)):
             overwrite_msg = 'Label file already exists for {}, overwrite?'.format(current_filename)
-            reply = QtGui.QMessageBox.question(self, 'File already exists', overwrite_msg \
-                , QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
-            if reply == QtGui.QMessageBox.Yes:
+            reply = QtWidgets.QMessageBox.question(self, 'File already exists', overwrite_msg \
+                , QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+            if reply == QtWidgets.QMessageBox.Yes:
                 self.ui.statusBar.showMessage('Overwriting previous label')
             else:
                 return 0
@@ -796,7 +806,7 @@ class MainWindow(QtGui.QMainWindow):
         """load image and associated label data"""
         if filename is None: # If its an empty call, prompt open file
             filters = "Text files (*.csv);;All (*)"
-            f = QtGui.QFileDialog.getOpenFileNameAndFilter(self, "Open Label File", '.', filters)
+            f = QtWidgets.QFileDialog.getOpenFileNameAndFilter(self, "Open Label File", '.', filters)
             filename = str(f[0])
         #TODO: SVG loading
         label_dataset.load(filename, tool=self.tool_str)
@@ -823,7 +833,7 @@ Select Annotation: \t Shift Click
 Previous/Next Image: \t</>
 Save Annotation: \tCtrl + s
 Exit application: \tESC"""
-        QtGui.QMessageBox.information(self, 'About Pychet Circle Annotator', message)
+        QtWidgets.QMessageBox.information(self, 'About Pychet Circle Annotator', message)
     def loadAnnotations(self):
         """Look for annotation file in label folder and load data"""
         # Get current file name
@@ -842,7 +852,7 @@ Exit application: \tESC"""
         # If labels are loaded then toggle changeMade to False
         self.imagePanel.changeMade = False
 
-class FitImageGraphicsView(QtGui.QGraphicsView):
+class FitImageGraphicsView(QtWidgets.QGraphicsView):
     """Resize function for window to properly fit an image."""
     def showEvent(self, QShowEvent):
         self.fitInView(self.sceneRect(), QtCore.Qt.KeepAspectRatio)
@@ -919,7 +929,7 @@ def parse_labelmap(labelmapfile=None):
 def main(args=None): 
     if not args:
         args = parse_args()
-    app = QtGui.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     main_window = MainWindow()
     main_window.tool_str = args.tool
     main_window.penwidth = args.penwidth

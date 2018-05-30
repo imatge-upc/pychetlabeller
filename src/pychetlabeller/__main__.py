@@ -1,3 +1,3 @@
 #!/usr/bin/env python
-from labeller import main
+from pychetlabeller.labeller import main
 main()

@@ -88,3 +88,9 @@ Extentions to labeller - coming soon:
 
 ## Bugs
 Please contact author to report bugs @ bargoti.suchet@gmail.com
+
+
+## Qt5 adaption
+Adapted to PyQt5/Python3.6. In PyQt5 some classes have moved from QtGui to QtWidgets. Also, the way to connect signals with slots has changed.
+The code is not yet fully tested but it seems to work. Contact ramon.morros@upc.edu for bugs in the Qt4 --> Qt5 conversion
+
